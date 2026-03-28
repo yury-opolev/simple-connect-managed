@@ -1,0 +1,18 @@
+{
+  "name": "simple-connect-jsinterop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ACS Calling SDK webpack bundle for Blazor JS interop",
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch"
+  },
+  "dependencies": {
+    "@azure/communication-calling": "^1.29.1",
+    "@azure/communication-common": "^2.3.1"
+  },
+  "devDependencies": {
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1"
+  }
+}

@@ -1,0 +1,135 @@
+@page "/join"
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@inject IApiClient ApiClient
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Simple Connect - Join Call</PageTitle>
+
+@if (this.state == JoinState.InCall)
+{
+    <VideoCall AcsToken="@this.acsToken"
+               AcsUserId="@this.acsUserId"
+               RoomId="@(this.roomId!)"
+               DisplayName="@this.displayName"
+               OnCallEnded="OnCallEnded" />
+}
+else
+{
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                @if (this.state == JoinState.Connecting)
+                {
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Connecting...</span>
+                            </div>
+                            <h4>Joining the call...</h4>
+                            <p class="text-muted">Please allow camera and microphone access when prompted.</p>
+                        </div>
+                    </div>
+                }
+                else if (this.state == JoinState.Ended)
+                {
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-telephone-x fs-1 text-muted mb-3 d-block"></i>
+                            <h2 class="mb-3">Call Ended</h2>
+                            <p class="text-muted">The video call has ended. Thank you for connecting!</p>
+                            <button class="btn btn-primary mt-3" @onclick="Rejoin">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Rejoin
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (this.state == JoinState.Error)
+                {
+                    <div class="card shadow-sm border-danger">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-exclamation-triangle fs-1 text-danger mb-3 d-block"></i>
+                            <h2 class="text-danger mb-3">Unable to Join</h2>
+                            <p class="text-muted">@this.error</p>
+                            <p class="small text-muted">Please contact the person who sent you the invite link.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private enum JoinState { Connecting, InCall, Ended, Error }
+
+    private JoinState state = JoinState.Connecting;
+    private string? roomId;
+    private string? token;
+    private string? acsToken;
+    private string? acsUserId;
+    private string displayName = "Guest";
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(this.Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        this.roomId = query["roomId"];
+        this.token = query["token"];
+
+        if (string.IsNullOrEmpty(this.roomId) || string.IsNullOrEmpty(this.token))
+        {
+            this.error = "Invalid invite link. The link may be missing required information.";
+            this.state = JoinState.Error;
+            return;
+        }
+
+        await this.JoinCall();
+    }
+
+    private async Task JoinCall()
+    {
+        this.state = JoinState.Connecting;
+
+        try
+        {
+            var sessionKey = $"simcon_session_{this.roomId}";
+            var existingSessionId = await this.JS.InvokeAsync<string?>("localStorage.getItem", sessionKey);
+
+            var result = await this.ApiClient.JoinRoomAsync(this.roomId!, this.token!, existingSessionId);
+            this.acsToken = result.AcsToken;
+            this.acsUserId = result.AcsUserId;
+
+            if (!string.IsNullOrWhiteSpace(result.DisplayName))
+            {
+                this.displayName = result.DisplayName;
+            }
+
+            await this.JS.InvokeVoidAsync("localStorage.setItem", sessionKey, result.SessionId);
+
+            this.state = JoinState.InCall;
+        }
+        catch (ApiException ex) when (ex.StatusCode == 403)
+        {
+            this.error = "This invite link has expired or has already been used.";
+            this.state = JoinState.Error;
+        }
+        catch (Exception ex)
+        {
+            this.error = $"Failed to join the call: {ex.Message}";
+            this.state = JoinState.Error;
+        }
+    }
+
+    private async Task Rejoin()
+    {
+        await this.JoinCall();
+    }
+
+    private void OnCallEnded()
+    {
+        this.state = JoinState.Ended;
+    }
+}

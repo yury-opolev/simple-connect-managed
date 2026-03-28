@@ -1,0 +1,226 @@
+/* =========================
+   Call Screen Layout
+   ========================= */
+
+.call-screen {
+    position: fixed;
+    inset: 0;
+    background: #111;
+    overflow: hidden;
+    z-index: 50;
+}
+
+.main-video-area {
+    width: 100%;
+    height: 100%;
+}
+
+/* =========================
+   Remote Video
+   ========================= */
+
+.remote-video-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #111;
+    overflow: hidden;
+}
+
+.video-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.video-container > div {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.local-video-pip .video-container video {
+    object-fit: cover;
+}
+
+/* =========================
+   Local Video PiP
+   ========================= */
+
+.local-video-pip {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 180px;
+    height: 135px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    z-index: 10;
+    background: #0d0d1a;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    -webkit-transform: translateZ(0);
+}
+
+/* =========================
+   Call Controls
+   ========================= */
+
+.call-controls-overlay {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+}
+
+.call-controls {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 2rem;
+}
+
+.call-btn {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: none;
+    font-size: 1.25rem;
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.call-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.call-btn-active,
+.call-btn-hangup {
+    background: #dc3545;
+}
+
+.call-btn-active:hover,
+.call-btn-hangup:hover {
+    background: #bb2d3b;
+}
+
+/* =========================
+   Camera Off Overlay
+   ========================= */
+
+.camera-off-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a2e;
+    color: rgba(255, 255, 255, 0.4);
+    z-index: 5;
+}
+
+.camera-off-overlay i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.camera-off-overlay.pip i {
+    font-size: 1.5rem;
+    margin-bottom: 0;
+}
+
+.camera-off-overlay.pip p {
+    display: none;
+}
+
+/* =========================
+   Status & Waiting Overlays
+   ========================= */
+
+.call-status-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.waiting-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.waiting-overlay i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* =========================
+   Mobile Responsive
+   ========================= */
+
+@media (max-width: 768px) {
+    .local-video-pip {
+        width: 100px;
+        height: 133px;
+        top: 0.75rem;
+        right: 0.75rem;
+    }
+
+    .call-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 1.1rem;
+    }
+
+    .call-controls {
+        gap: 0.75rem;
+        padding: 0.5rem 1.25rem;
+    }
+
+    .call-controls-overlay {
+        bottom: 1rem;
+    }
+}
+
+/* =========================
+   Blazor Utilities
+   ========================= */
+
+#blazor-error-ui {
+    display: none;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid red;
+}
+
+.validation-message {
+    color: red;
+}

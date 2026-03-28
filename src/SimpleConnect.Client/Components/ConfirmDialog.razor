@@ -1,0 +1,71 @@
+@implements IDisposable
+@inject IJSRuntime JS
+
+<div class="modal fade" id="@this.Id" tabindex="-1" aria-labelledby="@(this.Id)-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="@(this.Id)-label">@this.title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">@this.message</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn @this.confirmButtonClass" @onclick="Confirm">@this.confirmText</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "confirmDialog";
+
+    private string title = "Confirm";
+    private string message = "Are you sure?";
+    private string confirmText = "Confirm";
+    private string confirmButtonClass = "btn-danger";
+    private bool confirmed;
+    private TaskCompletionSource<bool>? tcs;
+    private DotNetObjectReference<ConfirmDialog>? dotNetRef;
+
+    protected override void OnInitialized()
+    {
+        this.dotNetRef = DotNetObjectReference.Create(this);
+    }
+
+    public async Task<bool> ShowAsync(string dialogTitle, string dialogMessage,
+        string dialogConfirmText = "Confirm", string buttonClass = "btn-danger")
+    {
+        this.title = dialogTitle;
+        this.message = dialogMessage;
+        this.confirmText = dialogConfirmText;
+        this.confirmButtonClass = buttonClass;
+        this.confirmed = false;
+        StateHasChanged();
+        await Task.Yield();
+
+        this.tcs = new TaskCompletionSource<bool>();
+        await this.JS.InvokeVoidAsync("simpleConnect.showModal", this.Id, this.dotNetRef);
+        return await this.tcs.Task;
+    }
+
+    private async Task Confirm()
+    {
+        this.confirmed = true;
+        await this.JS.InvokeVoidAsync("simpleConnect.hideModal", this.Id);
+    }
+
+    [JSInvokable]
+    public void OnModalHidden()
+    {
+        this.tcs?.TrySetResult(this.confirmed);
+    }
+
+    public void Dispose()
+    {
+        this.dotNetRef?.Dispose();
+    }
+}

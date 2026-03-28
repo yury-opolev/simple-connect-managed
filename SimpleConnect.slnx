@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SimpleConnect.Client/SimpleConnect.Client.csproj" />
+    <Project Path="src/SimpleConnect.Functions.Tests/SimpleConnect.Functions.Tests.csproj" />
+    <Project Path="src/SimpleConnect.Functions/SimpleConnect.Functions.csproj" />
+  </Folder>
+</Solution>

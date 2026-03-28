@@ -1,0 +1,355 @@
+@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@attribute [Authorize]
+@inject IApiClient ApiClient
+@inject IJSRuntime JS
+
+<PageTitle>Simple Connect - Dashboard</PageTitle>
+
+@if (this.inCall)
+{
+    <VideoCall AcsToken="@this.adminAcsToken"
+               AcsUserId="@this.adminUserId"
+               RoomId="@(this.roomId!)"
+               DisplayName="Host"
+               OnCallEnded="OnCallEnded" />
+}
+else
+{
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <h1 class="mb-4"><i class="bi bi-camera-video me-2"></i>Video Calls Dashboard</h1>
+
+            @* Create Room Card *@
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-plus-circle me-2"></i>Create a New Room</h5>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-4">
+                                <label class="form-label">Participant 1</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" @bind="this.guestName1" placeholder="e.g. Grandma" />
+                                    <button class="btn btn-outline-secondary" @onclick="RandomizeGuestName1"
+                                            data-bs-toggle="tooltip" data-bs-title="Random name">
+                                        <i class="bi bi-shuffle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label">Participant 2</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" @bind="this.guestName2" placeholder="e.g. Grandpa" />
+                                    <button class="btn btn-outline-secondary" @onclick="RandomizeGuestName2"
+                                            data-bs-toggle="tooltip" data-bs-title="Random name">
+                                        <i class="bi bi-shuffle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label">Duration (hours)</label>
+                                <input type="number" class="form-control" @bind="this.durationHours" min="1" max="168" />
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" @onclick="CreateRoom" disabled="@this.isCreating">
+                            @if (this.isCreating)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            }
+                            <i class="bi bi-telephone-plus me-2"></i>Create Room
+                        </button>
+                    </div>
+                </div>
+
+                @* Active Rooms *@
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-collection me-2"></i>Active Rooms</h5>
+
+                        @if (this.isLoadingRooms)
+                        {
+                            <div class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                <span class="ms-2 text-muted">Loading rooms...</span>
+                            </div>
+                        }
+                        else if (this.activeRooms.Count == 0)
+                        {
+                            <p class="text-muted mb-0">No active rooms. Create one above.</p>
+                        }
+                        else
+                        {
+                            @foreach (var room in this.activeRooms)
+                            {
+                                <div class="card mb-3">
+                                    <div class="card-header d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <code class="me-2">@room.RoomId[..Math.Min(16, room.RoomId.Length)]...</code>
+                                            <small class="text-muted">
+                                                Expires @room.ExpiresAt.ToLocalTime().ToString("g")
+                                            </small>
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-success" @onclick="() => RejoinRoom(room.RoomId)"
+                                                    data-bs-toggle="tooltip" data-bs-title="Join call">
+                                                <i class="bi bi-camera-video-fill me-1"></i>Join
+                                            </button>
+                                            <button class="btn btn-outline-danger" @onclick="() => DeleteRoom(room.RoomId)"
+                                                    data-bs-toggle="tooltip" data-bs-title="Delete room">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @if (room.Invites is { Count: > 0 })
+                                    {
+                                        <div class="card-body py-2">
+                                            @foreach (var invite in room.Invites)
+                                            {
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex align-items-center">
+                                                            <strong class="me-2">@(string.IsNullOrEmpty(invite.GuestName) ? "Guest" : invite.GuestName)</strong>
+                                                            @if (invite.Used)
+                                                            {
+                                                                <span class="badge bg-secondary">Used</span>
+                                                            }
+                                                            else if (invite.ExpiresAt < DateTimeOffset.Now)
+                                                            {
+                                                                <span class="badge bg-warning">Expired</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-success">Active</span>
+                                                            }
+                                                        </div>
+                                                        <div class="input-group input-group-sm mt-1">
+                                                            <input type="text" class="form-control form-control-sm" value="@invite.ShortInviteUrl" readonly />
+                                                            <button class="btn btn-outline-secondary btn-sm"
+                                                                    data-bs-toggle="tooltip"
+                                                                    data-bs-title="@(this.IsJustCopied(invite.ShortInviteUrl) ? "Copied!" : "Copy to clipboard")"
+                                                                    @onclick="() => CopyToClipboard(invite.ShortInviteUrl)">
+                                                                <i class="bi @(this.IsJustCopied(invite.ShortInviteUrl) ? "bi-check-lg" : "bi-clipboard")"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-primary btn-sm"
+                                                                    data-bs-toggle="tooltip" data-bs-title="Regenerate invite link"
+                                                                    @onclick="() => RegenerateInvite(room, invite)">
+                                                                <i class="bi bi-arrow-clockwise"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(this.error))
+                {
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>@this.error
+                    </div>
+                }
+        </div>
+    </div>
+</div>
+
+@if (this.busyMessage is not null)
+{
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+         style="background: rgba(0,0,0,0.4); z-index: 1055;">
+        <div class="text-center text-white">
+            <div class="spinner-border spinner-border-lg mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+            <p class="fs-5 mb-0">@this.busyMessage</p>
+        </div>
+    </div>
+}
+
+<ConfirmDialog @ref="confirmDialog" Id="confirmDialog" />
+}
+
+@code {
+    private int durationHours = 24;
+    private string guestName1 = "";
+    private string guestName2 = "";
+    private bool isCreating;
+    private bool isLoadingRooms = true;
+    private bool inCall;
+
+    private string? roomId;
+    private string? adminAcsToken;
+    private string? adminUserId;
+    private string? error;
+    private string? justCopiedUrl;
+    private string? busyMessage;
+    private List<RoomSummary> activeRooms = new();
+    private ConfirmDialog confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.guestName1 = RandomNameGenerator.Generate();
+        this.guestName2 = RandomNameGenerator.Generate();
+        try
+        {
+            this.activeRooms = await this.ApiClient.GetActiveRoomsAsync();
+        }
+        catch (Exception ex)
+        {
+            this.error = $"Failed to load rooms: {ex.Message}";
+        }
+        finally
+        {
+            this.isLoadingRooms = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!this.inCall)
+        {
+            await this.JS.InvokeVoidAsync("simpleConnect.refreshTooltips");
+        }
+    }
+
+    private void RandomizeGuestName1() => this.guestName1 = RandomNameGenerator.Generate();
+    private void RandomizeGuestName2() => this.guestName2 = RandomNameGenerator.Generate();
+
+    private bool IsJustCopied(string url) => this.justCopiedUrl == url;
+
+    private async Task ShowBusy(string message, Func<Task> action)
+    {
+        this.busyMessage = message;
+        StateHasChanged();
+        await Task.Yield();
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            this.busyMessage = null;
+        }
+    }
+
+    private async Task CreateRoom()
+    {
+        this.isCreating = true;
+        this.error = null;
+        try
+        {
+            var result = await this.ApiClient.CreateRoomAsync(this.durationHours, this.guestName1, this.guestName2);
+
+            var invites = result.Invites.Select(i => new InviteSummaryItem(
+                GuestName: i.GuestName,
+                ShortInviteUrl: i.ShortInviteUrl,
+                CreatedAt: DateTimeOffset.UtcNow,
+                ExpiresAt: result.ExpiresAt,
+                Used: false)).ToList();
+
+            this.activeRooms.Insert(0, new RoomSummary(
+                RoomId: result.RoomId,
+                CreatedAt: DateTimeOffset.UtcNow,
+                ExpiresAt: result.ExpiresAt,
+                InviteCount: result.Invites.Count,
+                Invites: invites));
+
+            this.guestName1 = RandomNameGenerator.Generate();
+            this.guestName2 = RandomNameGenerator.Generate();
+        }
+        catch (Exception ex)
+        {
+            this.error = $"Failed to create room: {ex.Message}";
+        }
+        finally
+        {
+            this.isCreating = false;
+        }
+    }
+
+    private async Task RejoinRoom(string selectedRoomId)
+    {
+        this.error = null;
+        await ShowBusy("Joining call...", async () =>
+        {
+            var result = await this.ApiClient.RejoinRoomAsync(selectedRoomId);
+            this.roomId = result.RoomId;
+            this.adminAcsToken = result.AdminAcsToken;
+            this.adminUserId = result.AdminUserId;
+            this.inCall = true;
+        });
+    }
+
+    private async Task RegenerateInvite(RoomSummary room, InviteSummaryItem oldInvite)
+    {
+        var guestLabel = string.IsNullOrEmpty(oldInvite.GuestName) ? "this guest" : oldInvite.GuestName;
+        var confirmed = await this.confirmDialog.ShowAsync(
+            "Regenerate invite link?",
+            $"The current invite link for {guestLabel} will stop working and a new one will be created.",
+            "Regenerate",
+            "btn-primary");
+        if (!confirmed) return;
+
+        this.error = null;
+        await ShowBusy("Regenerating invite...", async () =>
+        {
+            var remainingHours = Math.Max(1, (int)Math.Ceiling((room.ExpiresAt - DateTimeOffset.UtcNow).TotalHours));
+            var result = await this.ApiClient.CreateInviteAsync(room.RoomId, remainingHours, oldInvite.GuestName);
+
+            var newInvite = new InviteSummaryItem(
+                GuestName: oldInvite.GuestName,
+                ShortInviteUrl: result.ShortInviteUrl,
+                CreatedAt: DateTimeOffset.UtcNow,
+                ExpiresAt: result.ExpiresAt,
+                Used: false);
+
+            var roomIndex = this.activeRooms.IndexOf(room);
+            if (roomIndex >= 0 && room.Invites is not null)
+            {
+                var inviteIndex = room.Invites.IndexOf(oldInvite);
+                if (inviteIndex >= 0)
+                {
+                    room.Invites[inviteIndex] = newInvite;
+                }
+            }
+        });
+    }
+
+    private async Task DeleteRoom(string selectedRoomId)
+    {
+        var confirmed = await this.confirmDialog.ShowAsync(
+            "Delete room?",
+            "This will permanently delete the room and all its invite links. This action cannot be undone.",
+            "Delete",
+            "btn-danger");
+        if (!confirmed) return;
+
+        this.error = null;
+        await ShowBusy("Deleting room...", async () =>
+        {
+            await this.ApiClient.DeleteRoomAsync(selectedRoomId);
+            this.activeRooms.RemoveAll(r => r.RoomId == selectedRoomId);
+        });
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        await this.JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        this.justCopiedUrl = text;
+        StateHasChanged();
+        await Task.Delay(2000);
+        this.justCopiedUrl = null;
+        StateHasChanged();
+    }
+
+    private void OnCallEnded()
+    {
+        this.inCall = false;
+        this.roomId = null;
+        this.adminAcsToken = null;
+        this.adminUserId = null;
+    }
+}

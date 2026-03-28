@@ -1,0 +1,222 @@
+@inject ICallService CallService
+@implements IAsyncDisposable
+
+<div class="call-screen">
+    @if (this.callState == CallState.Connecting)
+    {
+        <div class="call-status-overlay">
+            <div class="spinner-border text-light mb-3" role="status"></div>
+            <p>Connecting to the call...</p>
+        </div>
+    }
+    else if (this.callState == CallState.Connected)
+    {
+        <div class="main-video-area">
+            <div class="remote-video-wrapper">
+                @if (this.remoteParticipantId != null)
+                {
+                    <div id="remote-video-@this.remoteParticipantId" class="video-container"></div>
+                    @if (this.isRemoteCameraOff)
+                    {
+                        <div class="camera-off-overlay">
+                            <i class="bi bi-camera-video-off"></i>
+                            <p>Camera is off</p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="waiting-overlay">
+                        <i class="bi bi-hourglass-split"></i>
+                        <p>Waiting for the other person to join...</p>
+                    </div>
+                }
+
+                <div class="local-video-pip">
+                    <div id="local-video-container" class="video-container"></div>
+                    @if (this.isCameraOff)
+                    {
+                        <div class="camera-off-overlay pip">
+                            <i class="bi bi-camera-video-off"></i>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="call-controls-overlay">
+            <CallControls IsMuted="@this.isMuted"
+                          IsCameraOff="@this.isCameraOff"
+                          OnToggleMute="ToggleMute"
+                          OnToggleCamera="ToggleCamera"
+                          OnHangUp="HangUp" />
+        </div>
+    }
+    else if (this.callState == CallState.Error)
+    {
+        <div class="call-status-overlay">
+            <i class="bi bi-exclamation-triangle fs-1 text-danger mb-3 d-block"></i>
+            <h4 class="text-danger">Unable to Connect</h4>
+            <p>@this.error</p>
+            <p class="small opacity-75">Please check your camera/microphone permissions and try again.</p>
+        </div>
+    }
+</div>
+
+@code {
+    private enum CallState { Connecting, Connected, Error }
+
+    [Parameter, EditorRequired]
+    public string AcsToken { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string AcsUserId { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string RoomId { get; set; } = "";
+
+    [Parameter]
+    public string DisplayName { get; set; } = "Guest";
+
+    [Parameter]
+    public EventCallback OnCallEnded { get; set; }
+
+    private CallState callState = CallState.Connecting;
+    private bool isMuted;
+    private bool isCameraOff;
+    private bool isRemoteCameraOff;
+    private string? error;
+    private string? remoteParticipantId;
+    private DotNetObjectReference<VideoCall>? dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            this.dotNetRef = DotNetObjectReference.Create(this);
+            try
+            {
+                await this.CallService.InitializeAsync(this.AcsToken, this.DisplayName);
+                await this.CallService.JoinRoomAsync(this.RoomId);
+                await this.CallService.SubscribeToParticipantsAsync(this.dotNetRef);
+
+                this.callState = CallState.Connected;
+                this.StateHasChanged();
+
+                await Task.Delay(150);
+                await this.CallService.SetupLocalVideoAsync("local-video-container");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[VideoCall] Call setup failed: {ex}");
+                this.error = GetFriendlyError(ex);
+                this.callState = CallState.Error;
+                this.StateHasChanged();
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnParticipantAdded(string participantId)
+    {
+        if (this.remoteParticipantId != null)
+        {
+            return;
+        }
+
+        this.remoteParticipantId = participantId;
+        this.isRemoteCameraOff = false;
+        this.StateHasChanged();
+        await Task.Delay(100);
+        await this.CallService.RenderRemoteVideoAsync(participantId, $"remote-video-{participantId}");
+    }
+
+    [JSInvokable]
+    public void OnParticipantRemoved(string participantId)
+    {
+        if (this.remoteParticipantId != participantId)
+        {
+            return;
+        }
+
+        this.remoteParticipantId = null;
+        this.isRemoteCameraOff = false;
+        this.StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnRemoteCameraStateChanged(bool cameraOn)
+    {
+        this.isRemoteCameraOff = !cameraOn;
+        this.StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task OnCallDisconnected()
+    {
+        await this.OnCallEnded.InvokeAsync();
+    }
+
+    private async Task ToggleMute()
+    {
+        this.isMuted = !this.isMuted;
+        await this.CallService.ToggleMuteAsync();
+    }
+
+    private async Task ToggleCamera()
+    {
+        this.isCameraOff = !this.isCameraOff;
+        await this.CallService.ToggleCameraAsync();
+    }
+
+    private async Task HangUp()
+    {
+        await this.CallService.HangUpAsync();
+        await this.OnCallEnded.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await this.CallService.HangUpAsync();
+        }
+        catch
+        {
+            // Ignore errors during disposal
+        }
+        this.dotNetRef?.Dispose();
+    }
+
+    private static string GetFriendlyError(Exception ex)
+    {
+        var message = ex.Message;
+
+        if (message.Contains("tokenRefresher", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("is not an Object", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Your session credentials are invalid or expired. Please use a fresh invite link.";
+        }
+
+        if (message.Contains("getUserMedia", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("Permission denied", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("NotAllowedError", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Camera or microphone access was denied. Please allow access in your browser settings and try again.";
+        }
+
+        if (message.Contains("NotFoundError", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("no device", StringComparison.OrdinalIgnoreCase))
+        {
+            return "No camera or microphone found. Please connect a device and try again.";
+        }
+
+        if (message.Contains("network", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("ICE", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Network connection failed. Please check your internet connection and try again.";
+        }
+
+        return "Could not establish the video call. Please try again or use a different browser.";
+    }
+}

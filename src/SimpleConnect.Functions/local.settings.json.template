@@ -1,0 +1,15 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ACS_CONNECTION_STRING": "<your-acs-connection-string>",
+    "AZURE_STORAGE_CONNECTION": "UseDevelopmentStorage=true",
+    "JWT_SECRET": "<your-jwt-signing-secret-min-32-chars>",
+    "TOKEN_EXPIRY_HOURS": "24",
+    "BASE_URL": "http://localhost:7071",
+    "ENTRA_TENANT_ID": "consumers",
+    "ENTRA_CLIENT_ID": "<your-azure-ad-client-id>",
+    "ADMIN_OBJECT_IDS": "<comma-separated-entra-user-object-ids>"
+  }
+}

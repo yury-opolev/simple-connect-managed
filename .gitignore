@@ -1,0 +1,418 @@
+## ==========================================================================
+## .gitignore for .NET / Azure Functions + Blazor WebAssembly + Node.js
+## Based on: github/gitignore VisualStudio.gitignore & Node.gitignore
+## ==========================================================================
+
+## -------------------------------------------------------
+## Operating System
+## -------------------------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+## -------------------------------------------------------
+## IDE / Editor
+## -------------------------------------------------------
+
+# Visual Studio
+.vs/
+
+# VS Code (keep shared settings)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# JetBrains Rider / IntelliJ
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/aws.xml
+.idea/**/contentModel.xml
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+.idea/**/gradle.xml
+.idea/**/libraries
+.idea/**/mongoSettings.xml
+.idea/replstate.xml
+.idea/sonarlint/
+.idea/sonarlint.xml
+.idea/httpRequests
+.idea/caches/
+*.iws
+
+# Local History for VS Code
+.history/
+
+# Built VS Code Extensions
+*.vsix
+
+## -------------------------------------------------------
+## .NET / C# — Build Results
+## -------------------------------------------------------
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+publish/
+
+# MSBuild binary and structured log
+*.binlog
+MSBuild_Logs/
+
+## -------------------------------------------------------
+## .NET — User-Specific Files
+## -------------------------------------------------------
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Mono auto generated files
+mono_crash.*
+
+## -------------------------------------------------------
+## .NET — Build Artifacts & Compiled Output
+## -------------------------------------------------------
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+!Directory.Build.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+## -------------------------------------------------------
+## .NET — Test Results
+## -------------------------------------------------------
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+*.received.*
+BenchmarkDotNet.Artifacts/
+
+## -------------------------------------------------------
+## .NET — Code Coverage
+## -------------------------------------------------------
+*.dotCover
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.lcov
+.axoCover/*
+!.axoCover/settings.json
+
+## -------------------------------------------------------
+## .NET — NuGet
+## -------------------------------------------------------
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+
+## -------------------------------------------------------
+## .NET — Publish / ClickOnce
+## -------------------------------------------------------
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.publishproj
+PublishScripts/
+
+## -------------------------------------------------------
+## .NET — Misc Tools & Plugins
+## -------------------------------------------------------
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# NCrunch
+_NCrunch_*
+.NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# Chutzpah
+_Chutzpah*
+
+# Visual C++ cache
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# Visual Studio Trace Files
+*.e2e
+
+# Guidance Automation Toolkit
+*.gpState
+
+# TeamCity
+_TeamCity*
+
+# Web workbench (sass)
+.sass-cache/
+
+# Visual Studio cache
+*.[Cc]ache
+!?*.[Cc]ache/
+
+# SQL Server files
+*.mdf
+*.ldf
+*.ndf
+
+# Fakes
+FakesAssemblies/
+
+# Paket
+**/.paket/paket.exe
+paket-files/
+
+# FAKE
+**/.fake/
+
+# Fody
+FodyWeavers.xsd
+
+# VS local history
+**/.localhistory/
+.vshistory/
+
+# Ionide
+**/.ionide/
+
+# MFractors
+**/.mfractor/
+
+## -------------------------------------------------------
+## Blazor WebAssembly
+## -------------------------------------------------------
+# The _framework/ directory contains compiled .wasm, .dll,
+# blazor.boot.json, and compressed .br/.gz files generated
+# during build/publish. These MUST NOT be committed.
+**/wwwroot/_framework/
+_framework/
+
+# Static content from NuGet packages (generated on build)
+**/wwwroot/_content/
+
+# Blazor scoped CSS bundle (regenerated on build)
+**/*.styles.css
+
+## -------------------------------------------------------
+## Azure Functions
+## -------------------------------------------------------
+local.settings.json
+appsettings.Development.json
+
+# Azure build output
+csx/
+*.build.csdef
+
+# Azure Emulator
+ecf/
+rcf/
+
+# Azure Stream Analytics
+ASALocalRun/
+
+# AWS SAM (if ever used)
+.aws-sam
+
+## -------------------------------------------------------
+## Node.js
+## -------------------------------------------------------
+node_modules/
+jspm_packages/
+web_modules/
+bower_components/
+
+# Build output
+dist/
+build/Release
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+.nyc_output/
+
+# Caches
+.npm
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# Parcel / Vite
+.cache
+.parcel-cache
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Webpack
+.webpack/
+
+# Misc JS/TS
+.node_repl_history
+*.tgz
+.yarn-integrity
+
+# Yarn v3 PnP
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# pnpm
+.pnpm-store
+
+## -------------------------------------------------------
+## Secrets & Certificates
+## -------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.template
+infra/.env.*
+*.pfx
+*.key
+*.pem
+*.p12
+*.publishsettings
+http-client.private.env.json
+
+# Strong name keys (security risk)
+# *.snk
+
+## -------------------------------------------------------
+## Miscellaneous
+## -------------------------------------------------------
+# Backup files
+*~
+~$*
+*.bak
+*.swp
+*.swo
+
+# Windows Store app packages
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+*.appx
+*.appxbundle
+*.appxupload
+
+# Upgrade reports
+_UpgradeReport_Files/
+Backup*/
+UpgradeLog*.XML
+UpgradeLog*.htm
+ServiceFabricBackup/
+*.rptproj.bak
+
+# Generated code
+Generated_Code/
+Generated\ Files/
+orleans.codegen.cs
+
+# Docker
+**/docker-compose.override.yml
+
+# Terraform (if used in infra/)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+
+# NTVS analysis
+.ntvs_analysis.dat

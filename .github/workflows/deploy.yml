@@ -1,0 +1,78 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build & Deploy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Generate .env file from secrets
+        run: |
+          cat > infra/.env.${{ inputs.environment }} << EOF
+          ENTRA_CLIENT_ID="${{ vars.ENTRA_CLIENT_ID }}"
+          ADMIN_OBJECT_IDS="${{ secrets.ADMIN_OBJECT_IDS }}"
+          RESOURCE_GROUP="${{ vars.RESOURCE_GROUP }}"
+          LOCATION="${{ vars.LOCATION }}"
+          PROJECT_NAME="${{ vars.PROJECT_NAME }}"
+          FUNCTION_APP_NAME="${{ vars.FUNCTION_APP_NAME }}"
+          FUNCTION_APP_URL="https://${{ vars.FUNCTION_APP_NAME }}.azurewebsites.net"
+          KEY_VAULT_NAME="${{ vars.KEY_VAULT_NAME }}"
+          EOF
+
+      - name: Build
+        run: |
+          chmod +x infra/build.sh
+          infra/build.sh --env ${{ inputs.environment }}
+
+      - name: Deploy
+        run: |
+          cd out/functions
+          zip -r ../deploy.zip . --quiet
+          az functionapp deployment source config-zip \
+            --resource-group "${{ vars.RESOURCE_GROUP }}" \
+            --name "${{ vars.FUNCTION_APP_NAME }}" \
+            --src out/deploy.zip \
+            --output none
+        working-directory: ${{ github.workspace }}
+
+      - name: Deployment summary
+        run: |
+          echo "### Deployment complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Function App:** https://${{ vars.FUNCTION_APP_NAME }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

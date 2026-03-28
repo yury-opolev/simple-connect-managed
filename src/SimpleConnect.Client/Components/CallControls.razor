@@ -1,0 +1,43 @@
+@inject IJSRuntime JS
+
+<div class="call-controls">
+    <button class="call-btn @(this.IsMuted ? "call-btn-active" : "")"
+            @onclick="this.OnToggleMute"
+            data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@(this.IsMuted ? "Unmute" : "Mute")">
+        <i class="bi @(this.IsMuted ? "bi-mic-mute-fill" : "bi-mic-fill")"></i>
+    </button>
+
+    <button class="call-btn @(this.IsCameraOff ? "call-btn-active" : "")"
+            @onclick="this.OnToggleCamera"
+            data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@(this.IsCameraOff ? "Turn Camera On" : "Turn Camera Off")">
+        <i class="bi @(this.IsCameraOff ? "bi-camera-video-off-fill" : "bi-camera-video-fill")"></i>
+    </button>
+
+    <button class="call-btn call-btn-hangup"
+            @onclick="this.OnHangUp"
+            data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="End Call">
+        <i class="bi bi-telephone-x-fill"></i>
+    </button>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsMuted { get; set; }
+
+    [Parameter]
+    public bool IsCameraOff { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnToggleMute { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnToggleCamera { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnHangUp { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await this.JS.InvokeVoidAsync("simpleConnect.refreshTooltips");
+    }
+}
